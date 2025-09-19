@@ -1,7 +1,5 @@
 import logging
-import re
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from eyecite.models import CitationBase, FullCitation
 
@@ -15,6 +13,7 @@ class BaseCitation(CitationBase):
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(CitationBase.Metadata):
         """Define fields on self.metadata."""
+
         # Add any common metadata fields for new citation types
         jurisdiction: str | None = None
 
@@ -22,8 +21,10 @@ class BaseCitation(CitationBase):
         """Set up groups and metadata."""
         super().__post_init__()
         # Allow accessing metadata fields directly from the citation object
-        if not hasattr(self, 'metadata') or not isinstance(self.metadata, self.Metadata):
-            self.metadata = self.Metadata(**getattr(self, 'metadata', {}))
+        if not hasattr(self, "metadata") or not isinstance(
+            self.metadata, self.Metadata
+        ):
+            self.metadata = self.Metadata(**getattr(self, "metadata", {}))
 
 
 @dataclass(eq=False, unsafe_hash=False, repr=False)
@@ -31,16 +32,17 @@ class ConstitutionCitation(BaseCitation):
     """A citation to a constitution."""
 
     jurisdiction: str = "United States"
-    article: Optional[str] = None
-    section: Optional[str] = None
-    clause: Optional[str] = None
-    amendment: Optional[str] = None
-    part: Optional[str] = None
-    paragraph: Optional[str] = None
+    article: str | None = None
+    section: str | None = None
+    clause: str | None = None
+    amendment: str | None = None
+    part: str | None = None
+    paragraph: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         article: str | None = None
         section: str | None = None
         clause: str | None = None
@@ -54,7 +56,13 @@ class ConstitutionCitation(BaseCitation):
         return hash(
             tuple(
                 self.groups.get(k)
-                for k in ["jurisdiction", "article", "section", "clause", "amendment"]
+                for k in [
+                    "jurisdiction",
+                    "article",
+                    "section",
+                    "clause",
+                    "amendment",
+                ]
                 if k in self.groups
             )
             + (type(self).__name__,)
@@ -67,16 +75,17 @@ class RegulationCitation(BaseCitation):
 
     jurisdiction: str = "United States"
     reporter: str = ""
-    volume: Optional[str] = None
-    title: Optional[str] = None
-    page: Optional[str] = None
-    section: Optional[str] = None
-    rule: Optional[str] = None
-    chapter: Optional[str] = None
+    volume: str | None = None
+    title: str | None = None
+    page: str | None = None
+    section: str | None = None
+    rule: str | None = None
+    chapter: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         reporter: str | None = None
         volume: str | None = None
         title: str | None = None
@@ -101,7 +110,13 @@ class RegulationCitation(BaseCitation):
         return hash(
             tuple(
                 self.groups.get(k)
-                for k in ["jurisdiction", "reporter", "title", "section", "rule"]
+                for k in [
+                    "jurisdiction",
+                    "reporter",
+                    "title",
+                    "section",
+                    "rule",
+                ]
                 if k in self.groups
             )
             + (type(self).__name__,)
@@ -114,12 +129,13 @@ class CourtRuleCitation(BaseCitation):
 
     jurisdiction: str = "United States"
     rule_num: str = ""
-    rule_type: Optional[str] = None
-    court: Optional[str] = None
+    rule_type: str | None = None
+    court: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         rule_num: str | None = None
         rule_type: str | None = None
         court: str | None = None
@@ -144,13 +160,14 @@ class LegislativeBillCitation(BaseCitation):
     jurisdiction: str = "United States"
     chamber: str = "House"
     bill_num: str = ""
-    congress_num: Optional[str] = None
-    session_info: Optional[str] = None
-    year: Optional[str] = None
+    congress_num: str | None = None
+    session_info: str | None = None
+    year: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         chamber: str | None = None
         bill_num: str | None = None
         congress_num: str | None = None
@@ -175,16 +192,17 @@ class SessionLawCitation(BaseCitation):
     """A citation to an enacted session law."""
 
     jurisdiction: str = "United States"
-    year: Optional[str] = None
-    volume: Optional[str] = None
-    page: Optional[str] = None
-    chapter_num: Optional[str] = None
-    act_num: Optional[str] = None
-    law_num: Optional[str] = None
+    year: str | None = None
+    volume: str | None = None
+    page: str | None = None
+    chapter_num: str | None = None
+    act_num: str | None = None
+    law_num: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         year: str | None = None
         volume: str | None = None
         page: str | None = None
@@ -213,11 +231,12 @@ class JournalArticleCitation(FullCitation):
     reporter: str = ""  # The journal name
     page: str = ""
     year: str = ""
-    pincite: Optional[str] = None
+    pincite: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(FullCitation.Metadata):
         """Define fields on self.metadata."""
+
         volume: str | None = None
         reporter: str | None = None
         page: str | None = None
@@ -259,6 +278,7 @@ class ScientificIdentifierCitation(BaseCitation):
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         id_type: str | None = None
         id_value: str | None = None
 
@@ -284,15 +304,16 @@ class AttorneyGeneralCitation(BaseCitation):
     """A citation to an Attorney General opinion/advisory opinion."""
 
     jurisdiction: str = ""
-    volume: Optional[str] = None
-    page: Optional[str] = None
-    opinion_num: Optional[str] = None
-    opinion_type: Optional[str] = None  # e.g., "Inf.", "F." for NY
-    year: Optional[str] = None
+    volume: str | None = None
+    page: str | None = None
+    opinion_num: str | None = None
+    opinion_type: str | None = None  # e.g., "Inf.", "F." for NY
+    year: str | None = None
 
     @dataclass(eq=True, unsafe_hash=True)
     class Metadata(BaseCitation.Metadata):
         """Define fields on self.metadata."""
+
         volume: str | None = None
         page: str | None = None
         opinion_num: str | None = None

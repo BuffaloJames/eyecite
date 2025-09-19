@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 """Demo script showing the extended EyeCite functionality."""
 
-import sys
 import os
+import sys
 
 # Add the eyecite directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'eyecite'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "eyecite"))
 
 try:
     # Import the extended functionality
-    from eyecite import (
-        default_extended_tokenizer,
-        get_citations
-    )
+    from eyecite import get_citations
     from eyecite.models_extended import (
         ConstitutionCitation,
-        LegislativeBillCitation,
-        SessionLawCitation,
         JournalArticleCitation,
-        ScientificIdentifierCitation
+        LegislativeBillCitation,
+        ScientificIdentifierCitation,
+        SessionLawCitation,
     )
 
     print("✅ Successfully imported extended EyeCite functionality!")
@@ -54,26 +51,42 @@ try:
     print()
 
     # Categorize citations
-    constitution_cites = [c for c in citations if isinstance(c, ConstitutionCitation)]
-    bill_cites = [c for c in citations if isinstance(c, LegislativeBillCitation)]
+    constitution_cites = [
+        c for c in citations if isinstance(c, ConstitutionCitation)
+    ]
+    bill_cites = [
+        c for c in citations if isinstance(c, LegislativeBillCitation)
+    ]
     law_cites = [c for c in citations if isinstance(c, SessionLawCitation)]
-    journal_cites = [c for c in citations if isinstance(c, JournalArticleCitation)]
-    science_cites = [c for c in citations if isinstance(c, ScientificIdentifierCitation)]
-    other_cites = [c for c in citations if not isinstance(c, (
-        ConstitutionCitation, LegislativeBillCitation, SessionLawCitation,
-        JournalArticleCitation, ScientificIdentifierCitation
-    ))]
+    journal_cites = [
+        c for c in citations if isinstance(c, JournalArticleCitation)
+    ]
+    science_cites = [
+        c for c in citations if isinstance(c, ScientificIdentifierCitation)
+    ]
+    other_cites = [
+        c
+        for c in citations
+        if not isinstance(
+            c,
+            ConstitutionCitation
+            | LegislativeBillCitation
+            | SessionLawCitation
+            | JournalArticleCitation
+            | ScientificIdentifierCitation,
+        )
+    ]
 
     print("📜 Constitution Citations:")
     for cite in constitution_cites:
         print(f"    - {cite.matched_text()}")
-        if hasattr(cite, 'jurisdiction'):
+        if hasattr(cite, "jurisdiction"):
             print(f"      Jurisdiction: {cite.jurisdiction}")
-        if hasattr(cite, 'article') and cite.article:
+        if hasattr(cite, "article") and cite.article:
             print(f"      Article: {cite.article}")
-        if hasattr(cite, 'section') and cite.section:
+        if hasattr(cite, "section") and cite.section:
             print(f"      Section: {cite.section}")
-        if hasattr(cite, 'amendment') and cite.amendment:
+        if hasattr(cite, "amendment") and cite.amendment:
             print(f"      Amendment: {cite.amendment}")
         print()
 
@@ -112,10 +125,13 @@ try:
 
 except ImportError as e:
     print(f"❌ Import error: {e}")
-    print("Please make sure eyecite is properly installed or the Python path is set correctly.")
+    print(
+        "Please make sure eyecite is properly installed or the Python path is set correctly."
+    )
     sys.exit(1)
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

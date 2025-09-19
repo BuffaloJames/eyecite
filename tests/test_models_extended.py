@@ -1,15 +1,13 @@
 import unittest
+
+from eyecite.models import Token
 from eyecite.models_extended import (
     ConstitutionCitation,
-    RegulationCitation,
-    CourtRuleCitation,
-    LegislativeBillCitation,
-    SessionLawCitation,
     JournalArticleCitation,
+    LegislativeBillCitation,
     ScientificIdentifierCitation,
-    BaseCitation,
+    SessionLawCitation,
 )
-from eyecite.models import Token
 
 
 class TestExtendedModels(unittest.TestCase):
@@ -23,7 +21,7 @@ class TestExtendedModels(unittest.TestCase):
             index=0,
             jurisdiction="United States",
             article="I",
-            section="9"
+            section="9",
         )
         self.assertEqual(citation.jurisdiction, "United States")
         self.assertEqual(citation.article, "I")
@@ -38,7 +36,7 @@ class TestExtendedModels(unittest.TestCase):
             volume="125",
             reporter="Yale L.J.",
             page="250",
-            year="2015"
+            year="2015",
         )
         self.assertEqual(citation.volume, "125")
         self.assertEqual(citation.reporter, "Yale L.J.")
@@ -49,18 +47,14 @@ class TestExtendedModels(unittest.TestCase):
         """Test creating a ScientificIdentifierCitation."""
         token = Token("DOI: 10.1038/171737a0", 0, 21, {})
         citation = ScientificIdentifierCitation(
-            token=token,
-            index=0,
-            id_type="DOI",
-            id_value="10.1038/171737a0"
+            token=token, index=0, id_type="DOI", id_value="10.1038/171737a0"
         )
         self.assertEqual(citation.id_type, "DOI")
         self.assertEqual(citation.id_value, "10.1038/171737a0")
 
         # Test corrected citation
         self.assertEqual(
-            citation.corrected_citation_full(),
-            "DOI: 10.1038/171737a0"
+            citation.corrected_citation_full(), "DOI: 10.1038/171737a0"
         )
 
     def test_legislative_bill_creation(self):
@@ -72,7 +66,7 @@ class TestExtendedModels(unittest.TestCase):
             jurisdiction="United States",
             chamber="House",
             bill_num="25",
-            congress_num="118"
+            congress_num="118",
         )
         self.assertEqual(citation.chamber, "House")
         self.assertEqual(citation.bill_num, "25")
@@ -87,12 +81,12 @@ class TestExtendedModels(unittest.TestCase):
             jurisdiction="United States",
             volume="90",
             page="2743",
-            law_num="94-579"
+            law_num="94-579",
         )
         self.assertEqual(citation.volume, "90")
         self.assertEqual(citation.page, "2743")
         self.assertEqual(citation.law_num, "94-579")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

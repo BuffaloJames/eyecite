@@ -1,10 +1,10 @@
-import os
 import sys
-sys.path.insert(0, '.')
+
+sys.path.insert(0, ".")
 from eyecite.tokenizers_extended import AttorneyGeneralOpinionsTokenizer
 
 # Test specifically on opinion_AL.txt
-with open('tests/assets/opinion_AL.txt', 'r', encoding='utf-8') as f:
+with open("tests/assets/opinion_AL.txt", encoding="utf-8") as f:
     text = f.read()
 
 print("Testing Attorney General opinion citation detection...")
@@ -23,7 +23,7 @@ print()
 
 if citations:
     for i, cite in enumerate(citations):
-        print(f"  {i+1}. {cite}")
+        print(f"  {i + 1}. {cite}")
 
     print("\n✅ SUCCESS! AG opinions are being detected!")
 else:
@@ -31,7 +31,13 @@ else:
     print("\nLet me check if the file contains AG opinion patterns...")
 
     # Check for AG opinion patterns in the text
-    ag_patterns = ["AGO", "Attorney General", "No. 20", "N.C. Op. Att'y Gen.", "Ala. Op. Att'y Gen."]
+    ag_patterns = [
+        "AGO",
+        "Attorney General",
+        "No. 20",
+        "N.C. Op. Att'y Gen.",
+        "Ala. Op. Att'y Gen.",
+    ]
     found_patterns = []
     for pattern in ag_patterns:
         if pattern.lower() in text.lower():
@@ -44,8 +50,9 @@ else:
 
     print("\nNow testing the regex directly...")
     # Test the regex directly
-    import re
     from eyecite.tokenizers_extended import ATTORNEY_GENERAL_REGEX
 
     regex_matches = ATTORNEY_GENERAL_REGEX.findall(text)
-    print(f"Direct regex found: {len(regex_matches)} matches: {regex_matches[:3]}...")
+    print(
+        f"Direct regex found: {len(regex_matches)} matches: {regex_matches[:3]}..."
+    )

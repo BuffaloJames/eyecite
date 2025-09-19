@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """Simple test to verify that our extended citation types work."""
 
-import sys
 import os
+import sys
 
 # Add the eyecite directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'eyecite'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "eyecite"))
 
 try:
     # Test basic imports
-    from eyecite.models_extended import ConstitutionCitation, JournalArticleCitation
-    from eyecite.tokenizers_extended import StateConstitutionTokenizer, JournalArticleTokenizer
+    from eyecite.tokenizers_extended import (
+        JournalArticleTokenizer,
+        StateConstitutionTokenizer,
+    )
 
     print("✅ Imports successful!")
 
@@ -37,10 +39,15 @@ try:
     if len(const_citations) == 1:
         const_cite = const_citations[0]
         print(f"✅ Constitution citation found: {const_cite.matched_text()}")
-        print(f"   Jurisdiction: {const_cite.jurisdiction}, Article: {const_cite.article}")
+        print(
+            f"   Jurisdiction: {const_cite.jurisdiction}, Article: {const_cite.article}"
+        )
         print("✅ Constitution test passed!")
     else:
-        print("❌ Constitution test failed - expected 1 citation, got", len(const_citations))
+        print(
+            "❌ Constitution test failed - expected 1 citation, got",
+            len(const_citations),
+        )
         sys.exit(1)
 
     print("\n🎉 All integration tests passed!")
@@ -48,5 +55,6 @@ try:
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

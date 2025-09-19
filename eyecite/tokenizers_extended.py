@@ -1,25 +1,25 @@
 import re
+
 from eyecite.models import TokenExtractor
 from eyecite.models_extended import (
-    ConstitutionCitation,
-    RegulationCitation,
-    CourtRuleCitation,
-    LegislativeBillCitation,
-    SessionLawCitation,
-    JournalArticleCitation,
-    ScientificIdentifierCitation,
     AttorneyGeneralCitation,
-    BaseCitation,
+    ConstitutionCitation,
+    CourtRuleCitation,
+    JournalArticleCitation,
+    LegislativeBillCitation,
+    RegulationCitation,
+    ScientificIdentifierCitation,
+    SessionLawCitation,
 )
 
 # Federal Constitution Patterns
 FEDERAL_CONSTITUTION_REGEX = re.compile(
     r"U\.S\.\sCONST\.\s(?P<article>[IVXLCDM]+),\s§\s(?P<section>\d+)(?:,\scl\.\s(?P<clause>\d+))?",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 FEDERAL_CONSTITUTION_AMENDMENT_REGEX = re.compile(
     r"U\.S\.\sCONST\.\samend\.\s(?P<amendment>[IVXLCDM]+)(?:,\s§\s(?P<section>\d+))?",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # State Constitutions Regex (Combined pattern from Gemini.md)
@@ -29,30 +29,32 @@ STATE_CONSTITUTIONS_REGEX = re.compile(
     r"Mass\.\sCONST\.\spt\.\s(?P<part_ma>\d+),\sart\.\s(?P<article_ma>[\d\w]+)|"
     r"N\.H\.\sCONST\.\spt\.\s(?P<part_nh>\d+),\sart\.\s(?P<article_nh>[\d\w]+)|"
     r"(?P<state_abbr>(?:[A-Z]\.){2,}|[A-Z][a-z]+\.)\sCONST\.\sart\.\s(?P<article_std>[\w\d]+)(?:,\s§\s(?P<section_std>[\d\w]+))?)",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # Federal Legislature Patterns
 FEDERAL_BILLS_REGEX = re.compile(
     r"(?P<hr>H\.R\.\s(?P<bill_num_hr>\d+))|(?P<sen>S\.\s(?P<bill_num_sen>\d+)),\s(?P<congress_num>\d+)th\sCong\.",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 FEDERAL_SESSION_LAW_REGEX = re.compile(
     r"Pub\.\sL\.\sNo\.\s(?P<law_num>[\d-]+),\s(?:§\s(?P<section_num>[\d\w-]+),)?\s(?P<volume_num>\d+)\sStat\.\s(?P<page_num>[\d,\s]+)",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # Journal Article Pattern
 JOURNAL_ARTICLE_REGEX = re.compile(
     r"(?P<volume>\d+)\s+(?P<reporter>[\w\s.&;']+?)\s+(?P<page>\d+)(?:,\s+(?P<pincite>[\d-]+))?\s+\((?P<year>\d{4})\)",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # Scientific Identifier Patterns
 IDENTIFIER_REGEX_MAP = {
     "DOI": re.compile(r"\b(10\.\d{4,9}/[-._;()/:A-Z0-9]+)\b"),
     "PMID": re.compile(r"\bPMID:\s*(\d+)\b"),
-    "ISBN": re.compile(r"ISBN(?:-13)?:\s*?(97[89](?:-|\s)?\d(?:-|\s)?\d{3}(?:-|\s)?\d{5}(?:-|\s)?\d)"),
+    "ISBN": re.compile(
+        r"ISBN(?:-13)?:\s*?(97[89](?:-|\s)?\d(?:-|\s)?\d{3}(?:-|\s)?\d{5}(?:-|\s)?\d)"
+    ),
     "arXiv": re.compile(r"arXiv:(\d{4}\.\d{4,5}(?:v\d+)?)"),
     "NCT": re.compile(r"\b(NCT\d{8})\b"),
     "Patent": re.compile(r"U\.S\.\s(?:Patent|Pat\.\sApp\.)\sNo\.\s([\d,/-]+)"),
@@ -70,7 +72,7 @@ ADMINISTRATIVE_REGULATIONS_REGEX = re.compile(
     r"N\.M\.\sAdmin\.\sCode\s§\s(?P<section_nm>[\d.]+)|"
     r"(?P<title_va>\d+)\sVa\.\sAdmin\.\sCode\s(?P<section_va>[\d.-]+)"
     r")",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # Court Rules Patterns (50 state combined - simplified version)
@@ -83,7 +85,7 @@ COURT_RULES_REGEX = re.compile(
     r"N\.C\.\sGen\.\sStat\.\s§\s(?P<stat_nc>[\d-]+)|"
     r"(?P<state_abbr_court>(?:[A-Z]\.){2,}|[A-Z][a-z]+\.)\sR\.\s(?P<court_type>[\w\s]+)\sR\.\s(?P<rule_num>[\d.-]+)"
     r")",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 # Scattered Citations Pattern (§§ ranges)
@@ -91,7 +93,7 @@ SCATTERED_CITATIONS_REGEX = re.compile(
     r"(?P<full_cite>"
     r"N\.C\.\sGen\.\sStat\.\s(?:§{1,2}\s(?P<section_scattered>[\d\s,\-]+))"
     r")",
-    re.IGNORECASE
+    re.IGNORECASE,
 )
 
 
@@ -104,18 +106,18 @@ class StateConstitutionTokenizer:
             TokenExtractor(
                 FEDERAL_CONSTITUTION_REGEX,
                 self._create_constitution_token,
-                {"citation_type": "federal"}
+                {"citation_type": "federal"},
             ),
             TokenExtractor(
                 FEDERAL_CONSTITUTION_AMENDMENT_REGEX,
                 self._create_constitution_token,
-                {"citation_type": "federal_amendment"}
+                {"citation_type": "federal_amendment"},
             ),
             TokenExtractor(
                 STATE_CONSTITUTIONS_REGEX,
                 self._create_constitution_token,
-                {"citation_type": "state"}
-            )
+                {"citation_type": "state"},
+            ),
         ]
 
     def _create_constitution_token(self, match, extra, offset=0):
@@ -126,10 +128,10 @@ class StateConstitutionTokenizer:
         data = match.group(0)
 
         # Determine jurisdiction
-        if extra.get("citation_type") == "federal":
-            jurisdiction = "United States"
-            groups = match.groupdict()
-        elif extra.get("citation_type") == "federal_amendment":
+        if (
+            extra.get("citation_type") == "federal"
+            or extra.get("citation_type") == "federal_amendment"
+        ):
             jurisdiction = "United States"
             groups = match.groupdict()
         else:
@@ -153,7 +155,7 @@ class StateConstitutionTokenizer:
             "jurisdiction": jurisdiction,
             "article": groups.get("article"),
             "section": groups.get("section"),
-            "amendment": groups.get("amendment")
+            "amendment": groups.get("amendment"),
         }
 
         token = Token(data, start + offset, end + offset, groups)
@@ -161,22 +163,24 @@ class StateConstitutionTokenizer:
             token=token,
             index=0,  # Temporary index, will be set by tokenizer
             jurisdiction=jurisdiction,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
     def _abbr_to_jurisdiction(self, abbr):
         """Convert state abbreviation to full jurisdiction name."""
         state_map = {
-            "Ala.": "Alabama", "Cal.": "California", "Va.": "Virginia",
-            "N.Y.": "New York", "Tex.": "Texas"
+            "Ala.": "Alabama",
+            "Cal.": "California",
+            "Va.": "Virginia",
+            "N.Y.": "New York",
+            "Tex.": "Texas",
         }
         return state_map.get(abbr, abbr)
 
     def find_all_citations(self, text: str):
         """Find all constitution citations in text."""
-        for citation in self._find_citations(text):
-            yield citation
+        yield from self._find_citations(text)
 
     def _find_citations(self, text):
         """Helper method to find citations."""
@@ -184,23 +188,28 @@ class StateConstitutionTokenizer:
 
         # Check federal constitution first
         for match in FEDERAL_CONSTITUTION_REGEX.finditer(text):
-            citation = self._create_constitution_token(match, {"citation_type": "federal"})
+            citation = self._create_constitution_token(
+                match, {"citation_type": "federal"}
+            )
             citations.append(citation)
 
         for match in FEDERAL_CONSTITUTION_AMENDMENT_REGEX.finditer(text):
-            citation = self._create_constitution_token(match, {"citation_type": "federal_amendment"})
+            citation = self._create_constitution_token(
+                match, {"citation_type": "federal_amendment"}
+            )
             citations.append(citation)
 
         # Check state constitutions
         for match in STATE_CONSTITUTIONS_REGEX.finditer(text):
-            citation = self._create_constitution_token(match, {"citation_type": "state"})
+            citation = self._create_constitution_token(
+                match, {"citation_type": "state"}
+            )
             citations.append(citation)
 
         return citations
 
     def tokenize(self, text: str):
         """Tokenize the entire text for constitution citations."""
-        from eyecite.models import Tokens, CitationBase
 
         citations = list(self.find_all_citations(text))
         # For now, return empty citation_tokens since we're not fully implementing
@@ -214,10 +223,7 @@ class JournalArticleTokenizer:
     def __init__(self, *args, **kwargs):
         self.regex = JOURNAL_ARTICLE_REGEX
         self.extractors = [
-            TokenExtractor(
-                JOURNAL_ARTICLE_REGEX,
-                self._create_journal_token
-            )
+            TokenExtractor(JOURNAL_ARTICLE_REGEX, self._create_journal_token)
         ]
 
     def _create_journal_token(self, match, extra, offset=0):
@@ -239,7 +245,7 @@ class JournalArticleTokenizer:
             "reporter": reporter,
             "page": page,
             "year": year,
-            "pincite": pincite
+            "pincite": pincite,
         }
 
         token = Token(data, start + offset, end + offset, groups)
@@ -251,7 +257,7 @@ class JournalArticleTokenizer:
             page=page,
             year=year,
             pincite=pincite,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -272,14 +278,10 @@ class FederalLegislationTokenizer:
 
     def __init__(self, *args, **kwargs):
         self.extractors = [
+            TokenExtractor(FEDERAL_BILLS_REGEX, self._create_bill_token),
             TokenExtractor(
-                FEDERAL_BILLS_REGEX,
-                self._create_bill_token
+                FEDERAL_SESSION_LAW_REGEX, self._create_session_law_token
             ),
-            TokenExtractor(
-                FEDERAL_SESSION_LAW_REGEX,
-                self._create_session_law_token
-            )
         ]
 
     def _create_bill_token(self, match, extra, offset=0):
@@ -303,7 +305,7 @@ class FederalLegislationTokenizer:
         metadata = {
             "chamber": chamber,
             "bill_num": bill_num,
-            "congress_num": congress_num
+            "congress_num": congress_num,
         }
 
         token = Token(data, start + offset, end + offset, groups)
@@ -314,7 +316,7 @@ class FederalLegislationTokenizer:
             chamber=chamber,
             bill_num=bill_num,
             congress_num=congress_num,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -332,11 +334,7 @@ class FederalLegislationTokenizer:
         page = groups.get("page_num")
         law_num = groups.get("law_num")
 
-        metadata = {
-            "volume": volume,
-            "page": page,
-            "law_num": law_num
-        }
+        metadata = {"volume": volume, "page": page, "law_num": law_num}
 
         token = Token(data, start + offset, end + offset, groups)
         citation = SessionLawCitation(
@@ -346,7 +344,7 @@ class FederalLegislationTokenizer:
             volume=volume,
             page=page,
             law_num=law_num,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -374,10 +372,9 @@ class ScientificIdentifierTokenizer:
     def __init__(self, *args, **kwargs):
         self.extractors = [
             TokenExtractor(
-                regex,
-                self._create_identifier_token,
-                {"id_type": id_type}
-            ) for id_type, regex in IDENTIFIER_REGEX_MAP.items()
+                regex, self._create_identifier_token, {"id_type": id_type}
+            )
+            for id_type, regex in IDENTIFIER_REGEX_MAP.items()
         ]
 
     def _create_identifier_token(self, match, extra, offset=0):
@@ -394,10 +391,7 @@ class ScientificIdentifierTokenizer:
 
         token = Token(data, start + offset, end + offset, groups)
         citation = ScientificIdentifierCitation(
-            token=token,
-            id_type=id_type,
-            id_value=id_value,
-            metadata=metadata
+            token=token, id_type=id_type, id_value=id_value, metadata=metadata
         )
         return citation
 
@@ -406,8 +400,7 @@ class ScientificIdentifierTokenizer:
         for id_type, regex in IDENTIFIER_REGEX_MAP.items():
             for match in regex.finditer(text):
                 citation = self._create_identifier_token(
-                    match,
-                    {"id_type": id_type}
+                    match, {"id_type": id_type}
                 )
                 yield citation
 
@@ -417,76 +410,13 @@ class ScientificIdentifierTokenizer:
         return [], [(i, citation) for i, citation in enumerate(citations)]
 
 
-# Integration class - combines all extended tokenizers
-class ExtendedCitationTokenizer:
-    """A tokenizer that combines all extended citation types with the base tokenizer."""
-
-    def __init__(self):
-        # Import base tokenizer
-        from eyecite.tokenizers import AhocorasickTokenizer
-
-        # Create base tokenizer and get its extractors
-        self.base_tokenizer = AhocorasickTokenizer()
-        base_extractors = list(self.base_tokenizer.extractors)
-
-        # Create extended extractors
-        extended_extractors = []
-
-        # Add constitution extractors
-        const_tokenizer = StateConstitutionTokenizer()
-        extended_extractors.extend(const_tokenizer.extractors)
-
-        # Add journal extractors
-        journal_tokenizer = JournalArticleTokenizer()
-        extended_extractors.extend(journal_tokenizer.extractors)
-
-        # Add federal legislation extractors
-        fed_leg_tokenizer = FederalLegislationTokenizer()
-        extended_extractors.extend(fed_leg_tokenizer.extractors)
-
-        # Add scientific identifier extractors
-        sci_tokenizer = ScientificIdentifierTokenizer()
-        extended_extractors.extend(sci_tokenizer.extractors)
-
-        # Combine all extractors
-        self.all_extractors = base_extractors + extended_extractors
-
-        # Create a tokenizer with all extractors
-        self.combined_tokenizer = AhocorasickTokenizer.__new__(AhocorasickTokenizer)
-        self.combined_tokenizer.extractors = self.all_extractors
-        self.combined_tokenizer.__post_init__()
-
-    def tokenize(self, text: str):
-        """Tokenize text using combined extractors."""
-        return self.combined_tokenizer.tokenize(text)
-
-    def find_all_citations(self, text: str):
-        """Find all citations (both base and extended) in text."""
-        # Use the standard get_citations function which will use the full combined tokenizer
-        from eyecite.find import get_citations
-
-        # Temporarily replace the default tokenizer
-        import eyecite.tokenizers
-        original_default = eyecite.tokenizers.default_tokenizer
-        eyecite.tokenizers.default_tokenizer = self.combined_tokenizer
-
-        try:
-            citations = get_citations(text)
-        finally:
-            # Restore original tokenizer
-            eyecite.tokenizers.default_tokenizer = original_default
-
-        return citations
-
-
 class AdministrativeRegulationsTokenizer:
     """Tokenizer for administrative regulations from various U.S. states."""
 
     def __init__(self, *args, **kwargs):
         self.extractors = [
             TokenExtractor(
-                ADMINISTRATIVE_REGULATIONS_REGEX,
-                self._create_regulation_token
+                ADMINISTRATIVE_REGULATIONS_REGEX, self._create_regulation_token
             )
         ]
 
@@ -528,10 +458,7 @@ class AdministrativeRegulationsTokenizer:
             title = None
             section = None
 
-        metadata = {
-            "title": title,
-            "section": section
-        }
+        metadata = {"title": title, "section": section}
 
         token = Token(data, start + offset, end + offset, groups)
         citation = RegulationCitation(
@@ -539,7 +466,7 @@ class AdministrativeRegulationsTokenizer:
             jurisdiction=jurisdiction,
             title=title,
             section=section,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -560,10 +487,7 @@ class CourtRulesTokenizer:
 
     def __init__(self, *args, **kwargs):
         self.extractors = [
-            TokenExtractor(
-                COURT_RULES_REGEX,
-                self._create_court_rule_token
-            )
+            TokenExtractor(COURT_RULES_REGEX, self._create_court_rule_token)
         ]
 
     def _create_court_rule_token(self, match, extra, offset=0):
@@ -610,7 +534,7 @@ class CourtRulesTokenizer:
         metadata = {
             "rule_num": rule_num,
             "rule_type": rule_type,
-            "court": court
+            "court": court,
         }
 
         token = Token(data, start + offset, end + offset, groups)
@@ -620,7 +544,7 @@ class CourtRulesTokenizer:
             rule_num=rule_num,
             rule_type=rule_type,
             court=court,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -642,8 +566,7 @@ class ScatteredCitationsTokenizer:
     def __init__(self, *args, **kwargs):
         self.extractors = [
             TokenExtractor(
-                SCATTERED_CITATIONS_REGEX,
-                self._create_scattered_token
+                SCATTERED_CITATIONS_REGEX, self._create_scattered_token
             )
         ]
 
@@ -660,24 +583,18 @@ class ScatteredCitationsTokenizer:
         section = groups.get("section_scattered")
 
         # Check if it's a range (contains multiple sections)
-        if section and any(char in section for char in [',', '-', ' ']):
-            sections = section.split()
-            # For ranges, we'll keep the original format
-            section = section.strip()
-        else:
+        # For ranges, we'll keep the original format - no need to split since we just want to validate
+        if not (section and any(char in section for char in [",", "-", " "])):
             section = section
 
-        metadata = {
-            "section": section,
-            "full_cite": data
-        }
+        metadata = {"section": section, "full_cite": data}
 
         token = Token(data, start + offset, end + offset, groups)
         citation = SessionLawCitation(
             token=token,
             jurisdiction=jurisdiction,
             chapter_num=section,  # Using chapter_num to store the section info
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -693,152 +610,66 @@ class ScatteredCitationsTokenizer:
         return [], [(i, citation) for i, citation in enumerate(citations)]
 
 
-# Update the ExtendedCitationTokenizer to include the new tokenizers
-class ExtendedCitationTokenizer:
-    """A tokenizer that combines all extended citation types with the base tokenizer."""
-
-    def __init__(self):
-        # Import base tokenizer
-        from eyecite.tokenizers import AhocorasickTokenizer
-
-        # Create base tokenizer and get its extractors
-        self.base_tokenizer = AhocorasickTokenizer()
-        base_extractors = list(self.base_tokenizer.extractors)
-
-        # Create extended extractors
-        extended_extractors = []
-
-        # Add constitution extractors
-        const_tokenizer = StateConstitutionTokenizer()
-        extended_extractors.extend(const_tokenizer.extractors)
-
-        # Add journal extractors
-        journal_tokenizer = JournalArticleTokenizer()
-        extended_extractors.extend(journal_tokenizer.extractors)
-
-        # Add federal legislation extractors
-        fed_leg_tokenizer = FederalLegislationTokenizer()
-        extended_extractors.extend(fed_leg_tokenizer.extractors)
-
-        # Add scientific identifier extractors
-        sci_tokenizer = ScientificIdentifierTokenizer()
-        extended_extractors.extend(sci_tokenizer.extractors)
-
-        # Add administrative regulation extractors
-        reg_tokenizer = AdministrativeRegulationsTokenizer()
-        extended_extractors.extend(reg_tokenizer.extractors)
-
-        # Add court rules extractors
-        court_tokenizer = CourtRulesTokenizer()
-        extended_extractors.extend(court_tokenizer.extractors)
-
-        # Add scattered citations extractors
-        scattered_tokenizer = ScatteredCitationsTokenizer()
-        extended_extractors.extend(scattered_tokenizer.extractors)
-
-        # Add AG opinions extractors
-        ag_tokenizer = AttorneyGeneralOpinionsTokenizer()
-        extended_extractors.extend(ag_tokenizer.extractors)
-        reg_tokenizer = AdministrativeRegulationsTokenizer()
-        extended_extractors.extend(reg_tokenizer.extractors)
-
-        # Add court rules extractors
-        court_tokenizer = CourtRulesTokenizer()
-        extended_extractors.extend(court_tokenizer.extractors)
-
-        # Add scattered citations extractors
-        scattered_tokenizer = ScatteredCitationsTokenizer()
-        extended_extractors.extend(scattered_tokenizer.extractors)
-
-        # Combine all extractors
-        self.all_extractors = base_extractors + extended_extractors
-
-        # Create a tokenizer with all extractors
-        self.combined_tokenizer = AhocorasickTokenizer.__new__(AhocorasickTokenizer)
-        self.combined_tokenizer.extractors = self.all_extractors
-        self.combined_tokenizer.__post_init__()
-
-    def tokenize(self, text: str):
-        """Tokenize text using combined extractors."""
-        return self.combined_tokenizer.tokenize(text)
-
-    def find_all_citations(self, text: str):
-        """Find all citations (both base and extended) in text."""
-        # Use the standard get_citations function which will use the full combined tokenizer
-        from eyecite.find import get_citations
-
-        # Temporarily replace the default tokenizer
-        import eyecite.tokenizers
-        original_default = eyecite.tokenizers.default_tokenizer
-        eyecite.tokenizers.default_tokenizer = self.combined_tokenizer
-
-        try:
-            citations = get_citations(text)
-        finally:
-            # Restore original tokenizer
-            eyecite.tokenizers.default_tokenizer = original_default
-
-        return citations
-
-
 # Attorney General Opinions Patterns (50 state combined from Gemini.md)
 ATTORNEY_GENERAL_REGEX = re.compile(
-    r"(?:" +
-    r"|".join([
-        r"(\d+)\sAla\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Alabama: volume page (year)
-        r"AGO\s(\d{4})\-(\d+)",  # Alabama AGO format: AGO 2018-046
-        r"(\d{4})\sAlaska\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Alaska: year opinion_num
-        r"Ariz\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Arizona: opinion_num (year)
-        r"Ark\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Arkansas: opinion_num (year)
-        r"(\d+)\sCal\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # California: volume page (year)
-        r"Colo\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Colorado: opinion_num (year)
-        r"(\d+)\sConn\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Connecticut: volume page (year)
-        r"(\d+)\sDel\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Delaware: volume page (year)
-        r"Fla\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Florida: opinion_num (year)
-        r"Ga\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Georgia: opinion_num (year)
-        r"Haw\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Hawaii: opinion_num (year)
-        r"Idaho\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Idaho: opinion_num (year)
-        r"Ill\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Illinois: opinion_num (year)
-        r"Ind\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Indiana: opinion_num (year)
-        r"Iowa\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Iowa: page (year)
-        r"Kan\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Kansas: opinion_num (year)
-        r"Ky\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Kentucky: opinion_num (year)
-        r"La\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Louisiana: opinion_num (year)
-        r"Me\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Maine: page (year)
-        r"(\d+)\sMd\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Maryland: volume page (year)
-        r"Mass\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Massachusetts: page (year)
-        r"Mich\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Michigan: opinion_num (year)
-        r"Minn\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Minnesota: opinion_num (year)
-        r"Miss\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Mississippi: page (year)
-        r"Mo\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Missouri: opinion_num (year)
-        r"(\d+)\sMont\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Montana: volume page (year)
-        r"Neb\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Nebraska: opinion_num (year)
-        r"Nev\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Nevada: opinion_num (year)
-        r"N\.H\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # New Hampshire: page (year)
-        r"N\.J\.\sOp\.\sAtt'y\sGen\.\s([\d-]+)",  # New Jersey: opinion_num (year)
-        r"N\.M\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # New Mexico: opinion_num (year)
-        r"N\.Y\.\sOp\.\sAtt'y\sGen\.\s\((Inf|F)\.\)\sNo\.\s([\d-]+)",  # New York: opinion_type opinion_num (year)
-        r"(\d+)\sN\.C\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # North Carolina: volume page (year)
-        r"N\.D\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # North Dakota: page (year)
-        r"Ohio\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Ohio: opinion_num (year)
-        r"Okla\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Oklahoma: opinion_num (year)
-        r"(\d+)\sOr\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Oregon: volume page (year)
-        r"Pa\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Pennsylvania: opinion_num (year)
-        r"R\.I\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Rhode Island: page (year)
-        r"S\.C\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # South Carolina: page (year)
-        r"S\.D\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # South Dakota: opinion_num (year)
-        r"Tenn\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d]+)",  # Tennessee: opinion_num (year)
-        r"Tex\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d\w-]+)",  # Texas: opinion_num (year)
-        r"Utah\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Utah: opinion_num (year)
-        r"Vt\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Vermont: opinion_num (year)
-        r"Va\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Virginia: page (year)
-        r"Wash\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Washington: opinion_num (year)
-        r"W\.\sVa\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # West Virginia: page (year)
-        r"Wis\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Wisconsin: page (year)
-        r"Wyo\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Wyoming: opinion_num (year)
-    ]) +
-    r")",
-    re.IGNORECASE
+    r"(?:"
+    + r"|".join(
+        [
+            r"(\d+)\sAla\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Alabama: volume page (year)
+            r"AGO\s(\d{4})\-(\d+)",  # Alabama AGO format: AGO 2018-046
+            r"(\d{4})\sAlaska\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Alaska: year opinion_num
+            r"Ariz\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Arizona: opinion_num (year)
+            r"Ark\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Arkansas: opinion_num (year)
+            r"(\d+)\sCal\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # California: volume page (year)
+            r"Colo\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Colorado: opinion_num (year)
+            r"(\d+)\sConn\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Connecticut: volume page (year)
+            r"(\d+)\sDel\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Delaware: volume page (year)
+            r"Fla\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Florida: opinion_num (year)
+            r"Ga\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Georgia: opinion_num (year)
+            r"Haw\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Hawaii: opinion_num (year)
+            r"Idaho\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Idaho: opinion_num (year)
+            r"Ill\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Illinois: opinion_num (year)
+            r"Ind\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Indiana: opinion_num (year)
+            r"Iowa\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Iowa: page (year)
+            r"Kan\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Kansas: opinion_num (year)
+            r"Ky\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Kentucky: opinion_num (year)
+            r"La\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Louisiana: opinion_num (year)
+            r"Me\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Maine: page (year)
+            r"(\d+)\sMd\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Maryland: volume page (year)
+            r"Mass\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Massachusetts: page (year)
+            r"Mich\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Michigan: opinion_num (year)
+            r"Minn\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Minnesota: opinion_num (year)
+            r"Miss\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Mississippi: page (year)
+            r"Mo\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Missouri: opinion_num (year)
+            r"(\d+)\sMont\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Montana: volume page (year)
+            r"Neb\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Nebraska: opinion_num (year)
+            r"Nev\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Nevada: opinion_num (year)
+            r"N\.H\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # New Hampshire: page (year)
+            r"N\.J\.\sOp\.\sAtt'y\sGen\.\s([\d-]+)",  # New Jersey: opinion_num (year)
+            r"N\.M\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # New Mexico: opinion_num (year)
+            r"N\.Y\.\sOp\.\sAtt'y\sGen\.\s\((Inf|F)\.\)\sNo\.\s([\d-]+)",  # New York: opinion_type opinion_num (year)
+            r"(\d+)\sN\.C\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # North Carolina: volume page (year)
+            r"N\.D\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # North Dakota: page (year)
+            r"Ohio\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Ohio: opinion_num (year)
+            r"Okla\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Oklahoma: opinion_num (year)
+            r"(\d+)\sOr\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Oregon: volume page (year)
+            r"Pa\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Pennsylvania: opinion_num (year)
+            r"R\.I\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Rhode Island: page (year)
+            r"S\.C\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # South Carolina: page (year)
+            r"S\.D\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # South Dakota: opinion_num (year)
+            r"Tenn\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d]+)",  # Tennessee: opinion_num (year)
+            r"Tex\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d\w-]+)",  # Texas: opinion_num (year)
+            r"Utah\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Utah: opinion_num (year)
+            r"Vt\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Vermont: opinion_num (year)
+            r"Va\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Virginia: page (year)
+            r"Wash\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Washington: opinion_num (year)
+            r"W\.\sVa\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # West Virginia: page (year)
+            r"Wis\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Wisconsin: page (year)
+            r"Wyo\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Wyoming: opinion_num (year)
+        ]
+    )
+    + r")",
+    re.IGNORECASE,
 )
 
 
@@ -848,8 +679,7 @@ class AttorneyGeneralOpinionsTokenizer:
     def __init__(self, *args, **kwargs):
         self.extractors = [
             TokenExtractor(
-                ATTORNEY_GENERAL_REGEX,
-                self._create_ag_opinion_token
+                ATTORNEY_GENERAL_REGEX, self._create_ag_opinion_token
             )
         ]
 
@@ -907,7 +737,7 @@ class AttorneyGeneralOpinionsTokenizer:
             "page": page,
             "opinion_num": opinion_num,
             "opinion_type": opinion_type,
-            "year": year
+            "year": year,
         }
 
         groups_dict = {"jurisdiction": jurisdiction, "data": data}
@@ -921,7 +751,7 @@ class AttorneyGeneralOpinionsTokenizer:
             opinion_num=opinion_num,
             opinion_type=opinion_type,
             year=year,
-            metadata=metadata
+            metadata=metadata,
         )
         return citation
 
@@ -990,29 +820,64 @@ class AttorneyGeneralOpinionsTokenizer:
     def _abbr_to_jurisdiction(self, abbr: str) -> str:
         """Convert state abbreviation to full jurisdiction name."""
         state_map = {
-            "Ala.": "Alabama", "Alaska": "Alaska", "Ariz.": "Arizona",
-            "Ark.": "Arkansas", "Cal.": "California", "Colo.": "Colorado",
-            "Conn.": "Connecticut", "Del.": "Delaware", "D.C.": "District of Columbia",
-            "Fla.": "Florida", "Ga.": "Georgia", "Haw.": "Hawaii",
-            "Idaho": "Idaho", "Ill.": "Illinois", "Ind.": "Indiana",
-            "Iowa": "Iowa", "Kan.": "Kansas", "Ky.": "Kentucky",
-            "La.": "Louisiana", "Me.": "Maine", "Md.": "Maryland",
-            "Mass.": "Massachusetts", "Mich.": "Michigan", "Minn.": "Minnesota",
-            "Miss.": "Mississippi", "Mo.": "Missouri", "Mont.": "Montana",
-            "Neb.": "Nebraska", "Nev.": "Nevada", "N.H.": "New Hampshire",
-            "N.J.": "New Jersey", "N.M.": "New Mexico", "N.Y.": "New York",
-            "N.C.": "North Carolina", "N.D.": "North Dakota", "Ohio": "Ohio",
-            "Okla.": "Oklahoma", "Or.": "Oregon", "Pa.": "Pennsylvania",
-            "R.I.": "Rhode Island", "S.C.": "South Carolina", "S.D.": "South Dakota",
-            "Tenn.": "Tennessee", "Tex.": "Texas", "Utah": "Utah",
-            "Vt.": "Vermont", "Va.": "Virginia", "Wash.": "Washington",
-            "W. Va.": "West Virginia", "Wis.": "Wisconsin", "Wyo.": "Wyoming",
+            "Ala.": "Alabama",
+            "Alaska": "Alaska",
+            "Ariz.": "Arizona",
+            "Ark.": "Arkansas",
+            "Cal.": "California",
+            "Colo.": "Colorado",
+            "Conn.": "Connecticut",
+            "Del.": "Delaware",
+            "D.C.": "District of Columbia",
+            "Fla.": "Florida",
+            "Ga.": "Georgia",
+            "Haw.": "Hawaii",
+            "Idaho": "Idaho",
+            "Ill.": "Illinois",
+            "Ind.": "Indiana",
+            "Iowa": "Iowa",
+            "Kan.": "Kansas",
+            "Ky.": "Kentucky",
+            "La.": "Louisiana",
+            "Me.": "Maine",
+            "Md.": "Maryland",
+            "Mass.": "Massachusetts",
+            "Mich.": "Michigan",
+            "Minn.": "Minnesota",
+            "Miss.": "Mississippi",
+            "Mo.": "Missouri",
+            "Mont.": "Montana",
+            "Neb.": "Nebraska",
+            "Nev.": "Nevada",
+            "N.H.": "New Hampshire",
+            "N.J.": "New Jersey",
+            "N.M.": "New Mexico",
+            "N.Y.": "New York",
+            "N.C.": "North Carolina",
+            "N.D.": "North Dakota",
+            "Ohio": "Ohio",
+            "Okla.": "Oklahoma",
+            "Or.": "Oregon",
+            "Pa.": "Pennsylvania",
+            "R.I.": "Rhode Island",
+            "S.C.": "South Carolina",
+            "S.D.": "South Dakota",
+            "Tenn.": "Tennessee",
+            "Tex.": "Texas",
+            "Utah": "Utah",
+            "Vt.": "Vermont",
+            "Va.": "Virginia",
+            "Wash.": "Washington",
+            "W. Va.": "West Virginia",
+            "Wis.": "Wisconsin",
+            "Wyo.": "Wyoming",
         }
         return state_map.get(abbr, abbr)
 
     def _extract_opinion_num(self, text: str) -> str:
         """Extract opinion number from AG opinion text."""
         import re
+
         match = re.search(r"No\.\s*([\d-]+)", text)
         if match:
             return match.group(1)
@@ -1081,7 +946,9 @@ class ExtendedCitationTokenizer:
         self.all_extractors = base_extractors + extended_extractors
 
         # Create a tokenizer with all extractors
-        self.combined_tokenizer = AhocorasickTokenizer.__new__(AhocorasickTokenizer)
+        self.combined_tokenizer = AhocorasickTokenizer.__new__(
+            AhocorasickTokenizer
+        )
         self.combined_tokenizer.extractors = self.all_extractors
         self.combined_tokenizer.__post_init__()
 
@@ -1092,10 +959,10 @@ class ExtendedCitationTokenizer:
     def find_all_citations(self, text: str):
         """Find all citations (both base and extended) in text."""
         # Use the standard get_citations function which will use the full combined tokenizer
-        from eyecite.find import get_citations
-
         # Temporarily replace the default tokenizer
         import eyecite.tokenizers
+        from eyecite.find import get_citations
+
         original_default = eyecite.tokenizers.default_tokenizer
         eyecite.tokenizers.default_tokenizer = self.combined_tokenizer
 
