@@ -736,6 +736,20 @@ class ExtendedCitationTokenizer:
         scattered_tokenizer = ScatteredCitationsTokenizer()
         extended_extractors.extend(scattered_tokenizer.extractors)
 
+        # Add AG opinions extractors
+        ag_tokenizer = AttorneyGeneralOpinionsTokenizer()
+        extended_extractors.extend(ag_tokenizer.extractors)
+        reg_tokenizer = AdministrativeRegulationsTokenizer()
+        extended_extractors.extend(reg_tokenizer.extractors)
+
+        # Add court rules extractors
+        court_tokenizer = CourtRulesTokenizer()
+        extended_extractors.extend(court_tokenizer.extractors)
+
+        # Add scattered citations extractors
+        scattered_tokenizer = ScatteredCitationsTokenizer()
+        extended_extractors.extend(scattered_tokenizer.extractors)
+
         # Combine all extractors
         self.all_extractors = base_extractors + extended_extractors
 
@@ -772,6 +786,7 @@ ATTORNEY_GENERAL_REGEX = re.compile(
     r"(?:" +
     r"|".join([
         r"(\d+)\sAla\.\sOp\.\sAtt'y\sGen\.\s(\d+)",  # Alabama: volume page (year)
+        r"AGO\s(\d{4})\-(\d+)",  # Alabama AGO format: AGO 2018-046
         r"(\d{4})\sAlaska\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Alaska: year opinion_num
         r"Ariz\.\sOp\.\sAtt'y\sGen\.\s([\d\w-]+)",  # Arizona: opinion_num (year)
         r"Ark\.\sOp\.\sAtt'y\sGen\.\sNo\.\s([\d-]+)",  # Arkansas: opinion_num (year)
@@ -899,6 +914,7 @@ class AttorneyGeneralOpinionsTokenizer:
         token = Token(data, start + offset, end + offset, groups_dict)
         citation = AttorneyGeneralCitation(
             token=token,
+            index=0,  # Required parameter from CitationBase
             jurisdiction=jurisdiction,
             volume=volume,
             page=page,
