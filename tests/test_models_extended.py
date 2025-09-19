@@ -20,6 +20,7 @@ class TestExtendedModels(unittest.TestCase):
         token = Token("U.S. CONST. art. I, § 9", 0, 18, {})
         citation = ConstitutionCitation(
             token=token,
+            index=0,
             jurisdiction="United States",
             article="I",
             section="9"
@@ -33,6 +34,7 @@ class TestExtendedModels(unittest.TestCase):
         token = Token("125 Yale L.J. 250", 0, 18, {})
         citation = JournalArticleCitation(
             token=token,
+            index=0,
             volume="125",
             reporter="Yale L.J.",
             page="250",
@@ -48,6 +50,7 @@ class TestExtendedModels(unittest.TestCase):
         token = Token("DOI: 10.1038/171737a0", 0, 21, {})
         citation = ScientificIdentifierCitation(
             token=token,
+            index=0,
             id_type="DOI",
             id_value="10.1038/171737a0"
         )
@@ -65,6 +68,7 @@ class TestExtendedModels(unittest.TestCase):
         token = Token("H.R. 25, 118th Cong.", 0, 20, {})
         citation = LegislativeBillCitation(
             token=token,
+            index=0,
             jurisdiction="United States",
             chamber="House",
             bill_num="25",
@@ -79,6 +83,7 @@ class TestExtendedModels(unittest.TestCase):
         token = Token("Pub. L. No. 94-579, 90 Stat. 2743", 0, 32, {})
         citation = SessionLawCitation(
             token=token,
+            index=0,
             jurisdiction="United States",
             volume="90",
             page="2743",
