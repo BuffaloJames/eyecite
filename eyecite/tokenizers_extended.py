@@ -22,13 +22,20 @@ FEDERAL_CONSTITUTION_AMENDMENT_REGEX = re.compile(
     re.IGNORECASE,
 )
 
-# State Constitutions Regex (Combined pattern from Gemini.md)
+# State Constitutions Regex (Combined pattern from documentation)
 STATE_CONSTITUTIONS_REGEX = re.compile(
-    r"(?:Ga\.\sCONST\.\sart\.\s(?P<article_ga>[\w\d]+),\s§\s(?P<section_ga>[\w\d]+),\spara\.\s(?P<paragraph_ga>[\w\d]+)|"
-    r"Me\.\sCONST\.\sart\.\s(?P<article_me>[\w\d]+),\spt\.\s(?P<part_me>[\d\w]+),\s§\s(?P<section_me>[\d\w]+)|"
-    r"Mass\.\sCONST\.\spt\.\s(?P<part_ma>\d+),\sart\.\s(?P<article_ma>[\d\w]+)|"
-    r"N\.H\.\sCONST\.\spt\.\s(?P<part_nh>\d+),\sart\.\s(?P<article_nh>[\d\w]+)|"
-    r"(?P<state_abbr>(?:[A-Z]\.){2,}|[A-Z][a-z]+\.)\sCONST\.\sart\.\s(?P<article_std>[\w\d]+)(?:,\s§\s(?P<section_std>[\d\w]+))?)",
+    r"(?:"
+    # Georgia: Ga. CONST. art. I, § 1, para. I.
+    r"(?P<state_abbr_ga>Ga\.)\sCONST\.\sart\.\s(?P<article_ga>[\w\d]+),\s§\s(?P<section_ga>[\w\d]+),\spara\.\s(?P<paragraph_ga>[\w\d]+)|"
+    # Maine: Me. CONST. art. IV, pt. 3, § 1
+    r"(?P<state_abbr_me>Me\.)\sCONST\.\sart\.\s(?P<article_me>[\w\d]+),\spt\.\s(?P<part_me>[\d\w]+),\s§\s(?P<section_me>[\d\w]+)|"
+    # Massachusetts: Mass. CONST. pt. 1, art. 12
+    r"(?P<state_abbr_mass>Mass\.)\sCONST\.\spt\.\s(?P<part_mass>\d+),\sart\.\s(?P<article_mass>[\d\w]+)|"
+    # New Hampshire: N.H. CONST. pt. 1, art. 2
+    r"(?P<state_abbr_nh>N\.H\.)\sCONST\.\spt\.\s(?P<part_nh>\d+),\sart\.\s(?P<article_nh>[\d\w]+)|"
+    # Standard pattern for most states: VA. CONST. art. IV, § 14
+    r"(?P<state_abbr>(?:[A-Z]\.){2,}|[A-Z][a-z]+\.)\sCONST\.\sart\.\s(?P<article_std>[\w\d]+)(?:,\s§\s(?P<section_std>[\d\w]+))?"
+    r")",
     re.IGNORECASE,
 )
 
@@ -127,36 +134,77 @@ class StateConstitutionTokenizer:
         start, end = match.span()
         data = match.group(0)
 
-        # Determine jurisdiction
-        if (
-            extra.get("citation_type") == "federal"
-            or extra.get("citation_type") == "federal_amendment"
-        ):
+        # Determine jurisdiction and extract proper citation data
+        groups = match.groupdict()
+        citation_type = extra.get("citation_type", "")
+
+        if citation_type == "federal" or citation_type == "federal_amendment":
             jurisdiction = "United States"
-            groups = match.groupdict()
         else:
-            # State constitution
-            groups = match.groupdict()
-            if groups.get("article_ga"):
+            # State constitution - check specific state patterns first
+            if groups.get("state_abbr_ga"):
                 jurisdiction = "Georgia"
-            elif groups.get("article_me"):
+            elif groups.get("state_abbr_me"):
                 jurisdiction = "Maine"
-            elif groups.get("part_ma"):
+            elif groups.get("state_abbr_mass"):
                 jurisdiction = "Massachusetts"
-            elif groups.get("part_nh"):
+            elif groups.get("state_abbr_nh"):
                 jurisdiction = "New Hampshire"
             else:
-                # Standard state pattern
+                # Standard state pattern - extract from state_abbr_std
                 state_abbr = groups.get("state_abbr", "")
                 jurisdiction = self._abbr_to_jurisdiction(state_abbr)
 
-        # Create metadata dict for constructor - only include known fields
+        # Extract article/section/amendment from the correct group names
+        article = None
+        section = None
+        amendment = None
+        metadata_extra = {}
+
+        if citation_type == "federal":
+            article = groups.get("article")
+            section = groups.get("section")
+        elif citation_type == "federal_amendment":
+            amendment = groups.get("amendment")
+        else:  # state constitution
+            # Check for specific state patterns first
+            if groups.get("article_ga"):
+                article = groups.get("article_ga")
+                section = groups.get("section_ga")
+                # Also set paragraph if present
+                if groups.get("paragraph_ga"):
+                    metadata_extra = {"paragraph": groups.get("paragraph_ga")}
+            elif groups.get("article_me"):
+                article = groups.get("article_me")
+                # Also set part if present
+                if groups.get("part_me"):
+                    metadata_extra = {"part": groups.get("part_me")}
+            elif groups.get("part_mass") and groups.get("article_mass"):
+                # Massachusetts format is different
+                metadata_extra = {
+                    "part": groups.get("part_mass"),
+                    "article": groups.get("article_mass"),
+                }
+            elif groups.get("part_nh") and groups.get("article_nh"):
+                # New Hampshire format is different
+                metadata_extra = {
+                    "part": groups.get("part_nh"),
+                    "article": groups.get("article_nh"),
+                }
+            elif groups.get("article_std"):
+                article = groups.get("article_std")
+                section = groups.get("section_std")
+
+        # Create metadata dict for constructor
         metadata = {
             "jurisdiction": jurisdiction,
-            "article": groups.get("article"),
-            "section": groups.get("section"),
-            "amendment": groups.get("amendment"),
+            "article": article,
+            "section": section,
+            "amendment": amendment,
         }
+
+        # Add extra metadata if any was set
+        metadata.update(metadata_extra)
 
         token = Token(data, start + offset, end + offset, groups)
         citation = ConstitutionCitation(
@@ -175,8 +223,22 @@ class StateConstitutionTokenizer:
             "Va.": "Virginia",
             "N.Y.": "New York",
             "Tex.": "Texas",
+            "Ga.": "Georgia",
+            "Me.": "Maine",
+            "Mass.": "Massachusetts",
+            "N.H.": "New Hampshire",
+            "Va.": "Virginia",
+            "N.Y.": "New York",
+            "N.C.": "North Carolina",
+            "S.C.": "South Carolina",
+            "Ky.": "Kentucky",
+            "Tenn.": "Tennessee",
+            "Ala.": "Alabama",
+            "Fla.": "Florida",
+            "Mich.": "Michigan",
+            "Ohio": "Ohio",
         }
-        return state_map.get(abbr, abbr)
+        return state_map.get(abbr.strip(), abbr.strip())
 
     def find_all_citations(self, text: str):
         """Find all constitution citations in text."""
@@ -610,7 +672,7 @@ class ScatteredCitationsTokenizer:
         return [], [(i, citation) for i, citation in enumerate(citations)]
 
 
-# Attorney General Opinions Patterns (50 state combined from Gemini.md)
+# Attorney General Opinions Patterns (50 state combined from documentation)
 ATTORNEY_GENERAL_REGEX = re.compile(
     r"(?:"
     + r"|".join(

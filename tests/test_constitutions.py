@@ -1,8 +1,9 @@
 """Test cases for constitution citation parsing."""
 
 import unittest
-from eyecite.tokenizers_extended import StateConstitutionTokenizer
+
 from eyecite.models_extended import ConstitutionCitation
+from eyecite.tokenizers_extended import StateConstitutionTokenizer
 
 
 class TestConstitutionTokenizers(unittest.TestCase):
@@ -74,7 +75,9 @@ class TestConstitutionTokenizers(unittest.TestCase):
 
     def test_multiple_constitutions(self):
         """Test multiple constitution citations in one text."""
-        text = "Both U.S. CONST. art. I, § 9 and Texas CONST. art. I, § 2 apply."
+        text = (
+            "Both U.S. CONST. art. I, § 9 and Texas CONST. art. I, § 2 apply."
+        )
         citations = list(self.tokenizer.find_all_citations(text))
 
         self.assertEqual(len(citations), 2)
@@ -92,5 +95,5 @@ class TestConstitutionTokenizers(unittest.TestCase):
         self.assertEqual(state_cite.section, "2")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
