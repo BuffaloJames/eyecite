@@ -31,7 +31,7 @@ jobs:
       - name: Add or Update comment on PR that Test is running
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           recreate: true
           message: |
             Eyecite Benchmarking in progress...
@@ -154,7 +154,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ github.event.client_payload.pr_number }}
           repo: reporters-db
           message: |
@@ -196,7 +196,7 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           recreate: true
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           path: results/report.md
           number: ${{ github.event.client_payload.pr_number }}
           repo: reporters-db
