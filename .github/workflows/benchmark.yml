@@ -10,45 +10,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: |
-          uv pip install ruff black
-
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --with lint --no-root
       - name: Run linters
         run: |
-          ruff check .
-          black --check .
+          poetry run ruff check .
+          poetry run black --check .
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: |
-          uv sync --frozen --extra test
-          uv pip install pytest pytest-cov
-
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --with test --no-root
       - name: Run tests
-        run: pytest --maxfail=1 --disable-warnings -q --cov=.
-
+        run: poetry run pytest --maxfail=1 --disable-warnings -q --cov=.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -58,23 +66,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: |
-          uv sync --frozen --extra benchmark
-          uv pip install pytest pytest-benchmark
-
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --with benchmark --no-root
       - name: Run benchmarks
-        run: pytest --benchmark-only --benchmark-json=benchmark.json
-
+        run: poetry run pytest --benchmark-only --benchmark-json=benchmark.json
       - name: Convert benchmark results
         run: |
           python - <<'EOF'
@@ -85,7 +96,6 @@ jobs:
               for bench in data["benchmarks"]:
                   f.write(f"{bench['fullname']}: {bench['stats']['mean']:.6f} sec\n")
           EOF
-
       - name: Benchmark Pull Request
         uses: marocchino/sticky-pull-request-comment@v2
         with:
@@ -97,23 +107,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v1
-
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Load cached venv
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: |
-          uv sync --frozen --extra docs
-          uv pip install mkdocs mkdocs-material
-
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --with docs --no-root
       - name: Build docs
-        run: mkdocs build --strict
-
+        run: poetry run mkdocs build --strict
       - name: Deploy docs
         if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v4
