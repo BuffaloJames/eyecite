@@ -53,31 +53,7 @@ jobs:
           echo ${{ github.event.issue.pull_request }}
           echo "::set-output name=filepath::benchmark/${{ env.main }}.json"
           echo "::set-output name=hash::${{ env.main }}"
-      #----------------------------------------------
-      #             Download Testing File
-      #
-      # We generated our testing datasets with the following command:
-      #
-      # root@maintenance:/opt/courtlistener# PGPASSWORD=$DB_PASSWORD psql \
-      #   --host $DB_HOST \
-      #   --username $DB_USER \
-      #   --dbname courtlistener \
-      #   --command \
-      #     'set statement_timeout to 0;
-      #      COPY (
-      #        SELECT \
-      #          id, plain_text, html, html_lawbox, html_columbia, html_anon_2020, xml_harvard \
-      #        FROM \
-      #          search_opinion \
-      #        TABLESAMPLE BERNOULLI (0.1) \
-      #      ) \
-      #      TO STDOUT \
-      #      WITH (FORMAT csv, ENCODING utf8, HEADER); \
-      #     ' \
-      #   | bzip2 \
-      #   | aws s3 cp - s3://com-courtlistener-storage/bulk-data/eyecite/tests/ten-percent.csv.bz2 \
-      #      --acl public-read
-      #----------------------------------------------
+
       - name: Download Testing File
         run: |
           curl https://storage.courtlistener.com/bulk-data/eyecite/tests/one-percent.csv.bz2 --output benchmark/bulk-file.csv.bz2
@@ -114,7 +90,7 @@ jobs:
       - name: Pushes test file
         uses: dmnemec/copy_file_to_another_repo_action@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.FREELAWBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
         with:
           user_email: 'info@free.law'
           user_name: 'freelawbot'
@@ -127,11 +103,12 @@ jobs:
       - name: Add or Update PR Comment from Generated Report
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           recreate: true
           path: results/report.md
 
   dispatch:
-    name: Reporters-DB-Dipatch
+    name: Reporters-DB-Dispatch
     if: github.event_name == 'repository_dispatch'
     runs-on: ubuntu-latest
     steps:
@@ -153,8 +130,8 @@ jobs:
       - name: Add or Update comment on PR that Test is running
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
           recreate: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           number: ${{ github.event.client_payload.pr_number }}
           repo: reporters-db
           message: |
@@ -182,7 +159,7 @@ jobs:
       - name: Pushes test file
         uses: dmnemec/copy_file_to_another_repo_action@main
         env:
-          API_TOKEN_GITHUB: ${{ secrets.FREELAWBOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
         with:
           user_email: 'info@free.law'
           user_name: 'freelawbot'
@@ -195,8 +172,8 @@ jobs:
       - name: Add or Update PR Comment from Generated Report
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
           recreate: true
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           path: results/report.md
           number: ${{ github.event.client_payload.pr_number }}
           repo: reporters-db
