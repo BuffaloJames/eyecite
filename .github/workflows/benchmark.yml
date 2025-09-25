@@ -1,179 +1,111 @@
-name: Benchmark Pull Request
-on:
-  pull_request:
-  repository_dispatch:
-    types: [ reporters-db-pr ]
+name: CI
 
-env:
-  main: "$(/usr/bin/git log -1 --format='%H')"
+on:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
-  benchmark:
-    name: PR comment
-    if: github.event_name == 'pull_request'
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        id: setup-python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
-          version: "0.7.x"
-
-      - name: Add or Update comment on PR that Test is running
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
-          recreate: true
-          message: |
-            Eyecite Benchmarking in progress...
-
-            For details, see: https://github.com/freelawproject/eyecite/actions/workflows/benchmark.yml
-
-            This message will be updated when the test is completed.
-
-      - name: Install Python dependencies
-        run: |
-          uv sync --frozen --no-group dev --group benchmark
-          source .venv/bin/activate
-          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
-          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
-
-      - name: Setup variables I
-        id: branch1
-        run: |
-          echo ${{ github.event.issue.pull_request }}
-          echo "::set-output name=filepath::benchmark/${{ env.main }}.json"
-          echo "::set-output name=hash::${{ env.main }}"
-
-      - name: Download Testing File
-        run: |
-          curl https://storage.courtlistener.com/bulk-data/eyecite/tests/one-percent.csv.bz2 --output benchmark/bulk-file.csv.bz2
-
-      - name: Run first benchmark
-        run: |
-          python benchmark/benchmark.py --branches ${{ steps.branch1.outputs.hash }}
-          git stash --include-untracked
-
       - uses: actions/checkout@v4
         with:
-          repository: freelawproject/eyecite
-          ref: main
-
-      - name: Install dependencies 2
-        run: uv sync --frozen --no-group dev --group benchmark
-
-      - name: Setup variables II
-        id: branch2
-        run: |
-          echo "::set-output name=filepath::benchmark/${{ env.main }}.json"
-          echo "::set-output name=hash::${{ env.main }}"
-
-      - name: Run second benchmark
-        run: |
-          git stash pop
-          python benchmark/benchmark.py --branches ${{ steps.branch1.outputs.hash }} ${{ steps.branch2.outputs.hash }} --pr ${{ github.event.number }}
-          mkdir results
-          mv benchmark/output.csv benchmark/${{ steps.branch1.outputs.hash }}.json benchmark/${{ steps.branch2.outputs.hash }}.json benchmark/report.md benchmark/chart.png results/
-
-      #----------------------------------------------
-      #             Upload to Github PR
-      #----------------------------------------------
-      - name: Pushes test file
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
-        with:
-          user_email: 'info@free.law'
-          user_name: 'freelawbot'
-          source_file: 'results/'
-          destination_repo: 'freelawproject/eyecite'
-          destination_folder: '${{ github.event.number }}'
-          destination_branch: 'artifacts'
-          commit_message: 'feat(ci): Add artifacts for PR# ${{ github.event.number }}'
-
-      - name: Add or Update PR Comment from Generated Report
-        uses: marocchino/sticky-pull-request-comment@v2
-        with:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
-          recreate: true
-          path: results/report.md
-
-  dispatch:
-    name: Reporters-DB-Dispatch
-    if: github.event_name == 'repository_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+          token: ${{ secrets.FREELAWBOT_TOKEN }}
 
       - name: Set up Python
-        id: setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: "3.11"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black
+
+      - name: Run linters
+        run: |
+          ruff check .
+          black --check .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          enable-cache: true
-          version: "0.7.x"
+          token: ${{ secrets.FREELAWBOT_TOKEN }}
 
-      - name: Add or Update comment on PR that Test is running
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: pytest --maxfail=1 --disable-warnings -q --cov=.
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.FREELAWBOT_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-benchmark
+
+      - name: Run benchmarks
+        run: pytest --benchmark-only --benchmark-json=benchmark.json
+
+      - name: Convert benchmark results
+        run: |
+          python - <<'EOF'
+          import json
+          with open("benchmark.json") as f:
+              data = json.load(f)
+          with open("benchmark-results.txt", "w") as f:
+              for bench in data["benchmarks"]:
+                  f.write(f"{bench['fullname']}: {bench['stats']['mean']:.6f} sec\n")
+          EOF
+
+      - name: Benchmark Pull Request
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: benchmark
           GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
-          recreate: true
-          number: ${{ github.event.client_payload.pr_number }}
-          repo: reporters-db
-          message: |
-            Eyecite Benchmarking in progress ...
-            This message will be updated when the test is completed.
+          path: benchmark-results.txt
 
-      - name: Install Python dependencies
-        run: |
-          uv sync --frozen --no-group dev --group benchmark
-          source .venv/bin/activate
-          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
-          echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
-
-      - name: Run Tests
-        run: |
-          uv pip install "git+https://github.com/freelawproject/reporters-db.git"
-          echo ${{ github.event.client_payload.pr_number }}
-          curl https://storage.courtlistener.com/bulk-data/eyecite/tests/one-percent.csv.bz2 --output benchmark/bulk-file.csv.bz2
-          python benchmark/benchmark.py --branches original
-          uv pip install "git+https://github.com/freelawproject/reporters-db.git@${{ github.event.client_payload.commit }}"
-          python benchmark/benchmark.py --branches original update --reporters --pr ${{ github.event.client_payload.pr_number }}
-          mkdir results
-          mv benchmark/output.csv benchmark/original.json benchmark/update.json benchmark/report.md benchmark/chart.png results/
-
-      - name: Pushes test file
-        uses: dmnemec/copy_file_to_another_repo_action@main
-        env:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          user_email: 'info@free.law'
-          user_name: 'freelawbot'
-          source_file: 'results/'
-          destination_repo: 'freelawproject/reporters-db'
-          destination_folder: '${{ github.event.client_payload.pr_number }}'
-          destination_branch: 'artifacts'
-          commit_message: 'feat(ci): Add artifacts for PR #${{ github.event.client_payload.pr_number }}'
+          token: ${{ secrets.FREELAWBOT_TOKEN }}
 
-      - name: Add or Update PR Comment from Generated Report
-        uses: marocchino/sticky-pull-request-comment@v2
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          GITHUB_TOKEN: ${{ secrets.FREELAWBOT_TOKEN }}
-          recreate: true
-          path: results/report.md
-          number: ${{ github.event.client_payload.pr_number }}
-          repo: reporters-db
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
