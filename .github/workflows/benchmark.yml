@@ -27,7 +27,7 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --with lint --no-root
+        run: poetry install
       - name: Run linters
         run: |
           poetry run ruff check .
@@ -54,7 +54,7 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --with test --no-root
+        run: poetry install
       - name: Run tests
         run: poetry run pytest --maxfail=1 --disable-warnings -q --cov=.
       - name: Upload coverage to Codecov
@@ -83,7 +83,7 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --with benchmark --no-root
+        run: poetry install
       - name: Run benchmarks
         run: poetry run pytest --benchmark-only --benchmark-json=benchmark.json
       - name: Convert benchmark results
@@ -124,7 +124,7 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --with docs --no-root
+        run: poetry install
       - name: Build docs
         run: poetry run mkdocs build --strict
       - name: Deploy docs
