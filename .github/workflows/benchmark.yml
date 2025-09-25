@@ -44,6 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen --extra test
+          uv pip install pytest pytest-cov
 
       - name: Run tests
         run: pytest --maxfail=1 --disable-warnings -q --cov=.
@@ -69,6 +70,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen --extra benchmark
+          uv pip install pytest pytest-benchmark
 
       - name: Run benchmarks
         run: pytest --benchmark-only --benchmark-json=benchmark.json
@@ -107,6 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --frozen --extra docs
+          uv pip install mkdocs mkdocs-material
 
       - name: Build docs
         run: mkdocs build --strict
